@@ -31,7 +31,7 @@ IMAGE_WIDTH = 550
 IMAGE_HEIGHT = 450  # 固定背景图片高度
 
 
-@register("历史上的今天", "Zhalslar", "枫林插件", "1.0.0", "https://github.com/Zhalslar/astrbot_plugin_today_in_history")
+@register("历史上的今天", "Zhalslar", "饰乐插件", "1.0.0", "https://github.com/Zhalslar/astrbot_plugin_yuafeng_today_in_history")
 class HistoryPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
