@@ -21,7 +21,7 @@ _✨ 历史上的今天 ✨_
 ```bash
 # 克隆仓库到插件目录
 cd /AstrBot/data/plugins
-git clone https://github.com/Zhalslar/astrbot_plugin_box.git
+git clone https://github.com/Zhalslar/astrbot-plugin-today-in-history.git
 
 # 控制台重启AstrBot
 ```
