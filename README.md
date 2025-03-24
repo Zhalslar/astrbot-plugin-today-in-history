@@ -19,11 +19,8 @@ _✨ 历史上的今天 ✨_
 ## 📦 安装
 
 ```bash
-# 克隆仓库到插件目录
-cd /AstrBot/data/plugins
-git clone https://github.com/Zhalslar/astrbot_plugin_today_in_history.git
+# astrbot面板上搜‘历史上的今天’，安装即可
 
-# 控制台重启AstrBot
 ```
 
 ## ⚙️ 配置
