@@ -43,6 +43,7 @@ class HistoryPlugin(Star):
 
         if os.path.exists(cache_file_path):
             yield event.image_result(cache_file_path)
+            return
         try:
             async with aiohttp.ClientSession() as client:
                 month = date.today().strftime("%m")
