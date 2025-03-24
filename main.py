@@ -13,7 +13,7 @@ from astrbot.core.platform import AstrMessageEvent
 
 PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
 
-FONT_PATH = os.path.join(PLUGIN_DIR, "resource", "可爱字体.ttf")
+FONT_PATH = os.path.join(PLUGIN_DIR, "resource", "华文新魏.ttf")
 BACKGROUND_PATH = os.path.join(PLUGIN_DIR, "resource", "background.png")
 TEMP_DIR = os.path.join(PLUGIN_DIR, "temp")
 
@@ -29,7 +29,7 @@ MARGIN_RIGHT = 10  # 右边距
 BACKGROUND_COLOR = 'white'  # 背景颜色
 IMAGE_WIDTH = 550
 IMAGE_HEIGHT = 450  # 固定背景图片高度
-
+TOP_MARGIN = 10 # 顶部边缘
 
 @register("历史上的今天", "Zhalslar", "饰乐插件", "1.0.0", "https://github.com/Zhalslar/astrbot_plugin_yuafeng_today_in_history")
 class HistoryPlugin(Star):
@@ -108,8 +108,7 @@ class HistoryPlugin(Star):
 
         return json.loads(text)
 
-
-    def text_to_image_path(self,text: str) -> str:
+    def text_to_image_path(self, text: str) -> str:
         """将给定文本转换为图像，并返回图像的保存路径"""
 
         font = ImageFont.truetype(str(FONT_PATH), FONT_SIZE)
@@ -130,10 +129,7 @@ class HistoryPlugin(Star):
         background_img = Image.open(BACKGROUND_PATH).resize((IMAGE_WIDTH, IMAGE_HEIGHT))
         draw = ImageDraw.Draw(background_img)
 
-        # 计算文本的垂直起始位置以使其居中
-        y_text = (IMAGE_HEIGHT - total_height) // 2
-
-        # 在图片上添加文字
+        y_text = TOP_MARGIN
         for line in lines:
             line_color = (random.randint(0, 64), random.randint(0, 16), random.randint(0, 32))
             draw.text((MARGIN_LEFT, y_text), line, fill=line_color, font=font)
@@ -146,6 +142,10 @@ class HistoryPlugin(Star):
         with open(image_path, 'wb') as f:
             f.write(img_byte_arr.getvalue())
         return image_path
+
+
+
+
 
 
 
