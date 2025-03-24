@@ -8,6 +8,7 @@ import random
 from astrbot import logger
 from astrbot.api.event import filter
 from astrbot.api.star import Context, Star, register
+from astrbot.core import AstrBotConfig
 from astrbot.core.platform import AstrMessageEvent
 
 
@@ -21,55 +22,62 @@ if not os.path.exists(TEMP_DIR):
     os.makedirs(TEMP_DIR)
 
 
-# 全局变量设置
-FONT_SIZE = 20  # 字体大小
-LINE_HEIGHT = 30  # 行高
-MARGIN_LEFT = 40  # 左边距
-MARGIN_RIGHT = 10  # 右边距
-BACKGROUND_COLOR = 'white'  # 背景颜色
-IMAGE_WIDTH = 550
-IMAGE_HEIGHT = 450  # 固定背景图片高度
-TOP_MARGIN = 10 # 顶部边缘
-
 @register("历史上的今天", "Zhalslar", "饰乐插件", "1.0.0", "https://github.com/Zhalslar/astrbot_plugin_yuafeng_today_in_history")
 class HistoryPlugin(Star):
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
+        self.month = date.today().strftime("%m")
+        self.day = date.today().strftime("%d")
         self.today_date_str = date.today().strftime("%Y_%m_%d")
+        self.temp_path = os.path.join(TEMP_DIR, f"{self.today_date_str}.png")
+        self.is_temp_image = config.get('is_temp_image', True)
+        self.auto_clear_temp = config.get('auto_clear_temp', True)
+        self.red_depth = config.get('red_depth', 40)
+
+
+
     @filter.command("历史上的今天")
     async def handle_history_today(self, event: AstrMessageEvent):
-
-        cache_file_path = os.path.join(TEMP_DIR, f"{self.today_date_str}.png")
-
-        if os.path.exists(cache_file_path):
-            yield event.image_result(cache_file_path)
+        if self.is_temp_image and os.path.exists(self.temp_path) :
+            yield event.image_result(self.temp_path)
             return
+
+        text = await self.get_events_on_history(self.month)
+
+        data = self.html_to_json_func(text)
+
+        today = f"{self.month}{self.day}"
+        f_today = f"{self.month.lstrip('0') or '0'}月{self.day.lstrip('0') or '0'}日"
+        reply = f"【历史上的今天-{f_today}】\n"
+        len_max = len(data[self.month][today])
+        for i in range(len_max):
+            str_year = data[self.month][today][i]["year"]
+            str_title = data[self.month][today][i]["title"]
+            reply += f"{str_year} {str_title}" + ("\n" if i < len_max - 1 else "")
+
+        image_path = self.text_to_image_path(reply)
+        yield event.image_result(image_path)
+
+        if not self.is_temp_image:
+            os.remove(self.temp_path)
+
+        if self.auto_clear_temp:
+            for file_path in (os.path.join(TEMP_DIR, f) for f in os.listdir(TEMP_DIR)):
+                if file_path != self.temp_path:
+                    os.unlink(file_path)
+
+
+    @staticmethod
+    async def get_events_on_history(month: str) -> str:
         try:
             async with aiohttp.ClientSession() as client:
-                month = date.today().strftime("%m")
-                day = date.today().strftime("%d")
                 url = f"https://baike.baidu.com/cms/home/eventsOnHistory/{month}.json"
                 response = await client.get(url)
-                response.encoding = "utf-8"  # 修改编码为 utf-8
-                text = await response.text()
-                data = self.html_to_json_func(text=text)
-
-                today = f"{month}{day}"
-                f_today = f"{month.lstrip('0') or '0'}月{day.lstrip('0') or '0'}日"
-                reply = f"【历史上的今天-{f_today}】\n"
-                len_max = len(data[month][today])
-
-                for i in range(len_max):
-                    str_year = data[month][today][i]["year"]
-                    str_title = data[month][today][i]["title"]
-                    reply += f"{str_year} {str_title}" + ("\n" if i < len_max - 1 else "")
-
-                image_path = self.text_to_image_path(reply)
-                yield event.image_result(image_path)
-
+                response.encoding = "utf-8"
+                return await response.text()
         except Exception as e:
             logger.error(f"任务处理失败: {e}")
-
+            return ""
 
     @staticmethod
     def html_to_json_func(text: str) -> json:
@@ -111,6 +119,13 @@ class HistoryPlugin(Star):
     def text_to_image_path(self, text: str) -> str:
         """将给定文本转换为图像，并返回图像的保存路径"""
 
+        FONT_SIZE = 20  # 字体大小
+        LINE_HEIGHT = 30  # 行高
+        MARGIN_LEFT = 40  # 左边距
+        MARGIN_RIGHT = 10  # 右边距
+        TOP_MARGIN = 10  # 上边距
+        BOTTOM_MARGIN = 10  # 下边距
+
         font = ImageFont.truetype(str(FONT_PATH), FONT_SIZE)
         draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
 
@@ -126,22 +141,23 @@ class HistoryPlugin(Star):
             total_height += LINE_HEIGHT
 
         # 加载背景图片
-        background_img = Image.open(BACKGROUND_PATH).resize((IMAGE_WIDTH, IMAGE_HEIGHT))
+        background_img = Image.open(BACKGROUND_PATH).resize(
+            (max_width + MARGIN_RIGHT + 80, total_height + BOTTOM_MARGIN)
+        )
         draw = ImageDraw.Draw(background_img)
 
         y_text = TOP_MARGIN
         for line in lines:
-            line_color = (random.randint(0, 64), random.randint(0, 16), random.randint(0, 32))
+            line_color = (random.randint(0, self.red_depth), random.randint(0, 16), random.randint(0, 32))
             draw.text((MARGIN_LEFT, y_text), line, fill=line_color, font=font)
             y_text += LINE_HEIGHT
 
         # 将图片保存
-        image_path = os.path.join(TEMP_DIR, f"{self.today_date_str}.png")
         img_byte_arr = BytesIO()
         background_img.save(img_byte_arr, format='PNG')
-        with open(image_path, 'wb') as f:
+        with open(self.temp_path, 'wb') as f:
             f.write(img_byte_arr.getvalue())
-        return image_path
+        return self.temp_path
 
 
 
